@@ -1,7 +1,7 @@
 module CU(Inst);
 
 
-
+//IO
 	input [31:0] Inst;
 
 	output [4:0] DA;
@@ -25,7 +25,6 @@ module CU(Inst);
 	output reg RCS; 	//Chip select
 	
 	output reg Reset; //? is this an output shouldnt this be the same or is this
-//	ascyncronous reset specically for the unit?
 	
 	output reg EN_ALU; //Enables the ALU
 	
@@ -43,12 +42,12 @@ module CU(Inst);
 	
 	output reg SFL; // Load Status Flags
 
-
+//Wires
 	wire[10:0] Opcode;
 
 	wire[20:0] Fields;
 
-	
+//General Assignments	
 	assign Opcode = Inst[31:21];
 
 	assign Fields = Inst[20:0];
@@ -142,7 +141,35 @@ module CU(Inst);
 		3'b010 :
 
 			// I format
+			
+				//Format Wire Assignments
 
+					assign DA = Inst[4:0];
+
+					assign AA = Inst[9:5];
+
+					assign Const = Inst[22:0];
+
+					KSEL <= 1'b1; // Enable Constant
+					
+					PC_SEL <= 2'b01; //Incrment PC
+					
+					EN_ALU <= 1'b1; //Enable ALU 
+					
+					WR <=1'b1; //Enable Register Write
+
+				//Operation Specific Funtion
+
+					if(Opcode[9] = 1)
+
+							FS <= 5'b01001; //SUB
+							Cin <= 1'b1; // Carry In Bit
+							
+
+					else
+
+							FS <= 5'b01000; //ADD
+				
 				// Status Flags
 
 					if(Opcode[8] = 1)
@@ -152,33 +179,14 @@ module CU(Inst);
 					else
 
 							SFL <= 1'b0;
-
-				//ADD/SUB
-
-					if(Opcode[9] = 1)
-
-							FS <= 5'b01001;
-
-					else
-
-							FS <= 5'b01000;
-
-				//Wire Assignments
-
-					assign DA = Inst[4:0];
-
-					assign AA = Inst[9:5];
-
-					assign Const = Inst[22:0];
-
-					KSEL <= 1'b1;
-
-			
-
 		3'b100 :
 
 			//Logic
-
+				
+				//Logic General Assignments
+				
+					PC_SEL <= 2'b01; //Incrment PC
+					
 				// Function Select
 
 					case(Opcode[9:8])
@@ -218,18 +226,8 @@ module CU(Inst);
 					if(Opcode[7] = 1)
 
 						// I format
-
-							// Status Flags
-
-								if(Opcode[8] = 1)
-
-									SFL <= 1'b1;
-
-								else
-
-									SFL <= 1'b1;
-
-							//General Wire Assignments
+							
+							//Format Wire Assignments
 
 								assign DA = Inst[4:0];
 
@@ -243,7 +241,7 @@ module CU(Inst);
 
 						// R format
 
-							//General Wire Assignments
+							//Format Wire Assignments
 
 								assign DA = Inst[4:0];
 
@@ -251,9 +249,7 @@ module CU(Inst);
 
 								assign BA = Inst[21:16];
 
-								WR <= 1'b1;
-
-				
+								WR <= 1'b1; // Register Write Enable
 
 		3'b101 :
 
@@ -263,7 +259,7 @@ module CU(Inst);
 
 			//R format
 
-				// General Wire Assignments
+				// Format Wire Assignments
 
 						assign DA = Inst[4:0];
 
@@ -283,7 +279,7 @@ module CU(Inst);
 
 						else
 
-							SFL <= 1'b1;
+							SFL <= 1'b0;
 
 				// Arithmetic/Shift
 
