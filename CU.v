@@ -102,7 +102,7 @@ module CU(Inst);
 	
 	
 
-	if(Opcode[4] = 1)
+	if(Opcode[4] = 1) // Should this be Opcode[5]? Check against table
 
 		case(Opcode[10:8]) //I think the format needs to be diff. I.E. what we have, Value gets a variable
 
@@ -134,9 +134,47 @@ module CU(Inst);
 
 		case(Opcode[4:2])
 
-		//D
-
 		3'b000 :
+		
+			// D format
+			
+				// Format Wire Assignments
+				
+					assign DA = Inst[4:0];
+					
+					assign AA = Inst[9:5];
+					
+					assign Const = Inst[21:12];
+					
+					// op2(00) ?
+					
+					FS <= 5'b01000;
+				
+					RCS <= 1'b1;
+					
+					EN_ADDR_ALU <= 1'b1;
+					
+					KSEL <= 1'b1;
+					
+					if(Opcode[1] = 1)
+					
+							WR <= 1'b1;
+							RR <= 1'b1;
+					
+					else
+					
+							WRR <= 1'b1;
+							
+					if(Opcode[10] = 1)
+					
+							// 64-bit 
+					
+					else
+					
+							// 8-bit
+							
+					
+					
 
 		3'b010 :
 
