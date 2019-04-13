@@ -10,7 +10,7 @@ module PC(in,PS,clock,Q,reset);
 		2'b00 :  Q <= reset ? PC_RESET_VALUE : Q;
 		2'b01 : Q <= reset ? PC_RESET_VALUE : Q + 32'd4;
 		2'b11 : Q <= reset ? PC_RESET_VALUE : {2'b0,in[29:0]};
-		2'b10 : Q <= reset ? PC_RESET_VALUE : Q + {2'b0,in[29:0]} + {2'b0,in[29:0]} + {2'b0,in[29:0]} + {2'b0,in[29:0]};
+		2'b10 : Q <= reset ? PC_RESET_VALUE : Q + 32'd4 + {2'b0,in[29:0]} + {2'b0,in[29:0]} + {2'b0,in[29:0]} + {2'b0,in[29:0]};
 		endcase
 	end
 endmodule

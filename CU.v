@@ -23,6 +23,7 @@ module CU(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL
 	output [4:0] BBL;
 	
 	output [4:0] FSL;
+	
 //Internal Registers
 	
 	reg [4:0] DA;
@@ -35,7 +36,7 @@ module CU(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL
 	
 	reg [1:0] PC_SEL; //register for PC select
 	
-	reg PC_MUX;
+	reg PC_MUX; //Controls K or A input to PC
 
 	reg WR; // Write Enable register
 	
@@ -55,7 +56,7 @@ module CU(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL
 	
 	reg EN_ADDR_PC;	//Enables PC to ram bus
 	
-	reg EN_PC; 
+	reg EN_PC; //Enables PC to the Databus
 	
 	reg IL;	//Enables instuction load
 	
@@ -63,22 +64,16 @@ module CU(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL
 	
 	reg SFL; // Load Status Flags
 	
-	reg[11:0] Const;
+	reg[63:0] K;
 	
 	reg[2:0] State;
 	
 //Wires
 
 	wire[10:0] Opcode;
-	
-	//wire[31:0] temp; // Will replace 
 
 //General Assignments	
 	assign Opcode = Inst[31:21];
-	
-	assign K[11:0] = Const[11:0];
-	
-	assign K[63:12] = 52'd0;
 	
 	assign AAL = AA;
 	
@@ -111,7 +106,7 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 
 	BA <= 5'd0;
 
-	Const <= 12'b0;
+	K <= 64'd0;
 
 	FS <= 5'b0;
 	
@@ -147,36 +142,69 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 	
 	TestPin <= 1'b0;
 
-	//if(Opcode[4] == 1)
-	
+	if(Opcode[4] == 1)
+		begin
 		
-		//if(Opcode[10:8] == 3'b000)
-		
+		if(Opcode[10:8] == 3'b000)
 			// B
+			begin
+				K <= Inst[25:0];
+				PC_MUX <= 1'b1;
+				PC_SEL <= 2'b10;
+			end
 
 		//if(Opcode[10:8] == 3'b010)
 
 			//B.cond
 
 		//if(Opcode[10:8] == 3'b100)
-
 			//BL
-		
-		//if(Opcode[10:8] == 3'b101)
-		
+			//begin
+					//???
+			//end
+		if(Opcode[10:8] == 3'b101)
 			//CBZ/CBNZ
+			begin
+					if(State[0] == 0)
+						begin
+						AA <= Inst[4:0];
+						EN_K <= 1'b1;
+						FS <= 00100;
+						SFL <= 1'b1;
+						PC_SEL <= 2'b00;
+						State <= State + 1;
+						end
+					else if(State[0] == 1)
+						begin
+							if((Status[0] == 1 & Opcode[2] == 0) | (Status[0] == 0 & Opcode[2] == 1))
+								begin
+									K <= Inst[20:5];
+									PC_MUX <= 1'b1;
+									PC_SEL <= 2'b10;
+								end
+							else
+								begin
+									PC_SEL <= 2'b01;
+								end
+							State <= 3'd0;
+						end
+			end
 
-		//if(Opcode[10:8] == 3'b110)
-		
-			// BR
-
+		if(Opcode[10:8] == 3'b110)
+			//BR
+			begin
+				AA <= Inst[4:0];
+				PC_SEL <= 2'b11;
+			end
+			
+	end
 	if(Opcode[5] == 0)
 		begin
 	
 		if(Opcode[4:2] == 3'b000)
 			// D format
 			begin
-				Const <= Inst[21:12];
+				K[9:0] <= Inst[20:12];
 				EN_K <= 1'b1;
 				FS <= 5'b01000;
 				RCS <= 1'b1;
@@ -193,7 +221,7 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 								PC_SEL <= 2'b00;
 								State <= State + 1;
 							end
-						if(State[0] == 1)
+						else if(State[0] == 1)
 							begin
 								WR <= 1'b1; //enable write on second cycle
 								PC_SEL <= 2'b01;
@@ -222,7 +250,7 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 
 					 AA <= Inst[9:5];
 
-					Const <= Inst[21:10];
+					K[11:0] <= Inst[21:10];
 
 					EN_K <= 1'b1; // Enable Constant
 					
@@ -296,7 +324,7 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 
 								AA <= Inst[9:5];
 
-								Const <= Inst[21:10];
+								K[11:0] <= Inst[21:10];
 
 								EN_K <= 1'b1;
 								
@@ -313,8 +341,42 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 						end
 				end
 
-		//if (Opcode[4:2] == 3'b101)
+		if (Opcode[4:2] == 3'b101)
 			// IW format
+			begin
+			
+				if(Opcode[8] == 1)
+					//MovK
+					begin
+						DA <= Inst[4:0];
+						AA <= Inst[4:0];
+						EN_K <= 1'b1;
+						EN_ALU <= 1'b1;
+						WR <= 1'b1;
+						if(State[0] == 0)
+							begin
+								State <= State + 1;
+								PC_SEL <= 2'b00;
+								FS <= 5'b00000;
+								K <= {48'b1,16'b0};
+							end
+						else if(State[0] == 1)
+							begin
+								State <= 3'd0;
+								PC_SEL <= 2'b01;
+								FS <= 5'b00100;
+								K <= {48'b0,Inst[20:5]};
+							end
+					end
+					
+				if(Opcode[8] == 0)
+					//MovZ
+					begin 
+					FS <= 5'b00000;
+					PC_SEL <= 2'b01;
+					K <= {48'b0,Inst[20:5]};
+					end
+			end
 		if (Opcode[4:2] == 3'b110)
 			//R format
 			begin
@@ -354,7 +416,7 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 						if(Opcode[1] == 1)
 						//Shift Wire Assignments
 							begin
-							Const <= Inst[15:10];
+							K[5:0] <= Inst[15:10];
 							EN_K <= 1'b1;
 							if(Opcode[0] == 1)
 								//Shift Left
