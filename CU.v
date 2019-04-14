@@ -1,8 +1,8 @@
-module CU(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,FSL);
+module CU(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,FSL);
 
 
 //IO
-	input [31:0] Inst;
+	//input [31:0] Inst;
 	
 	input CLK;
 	
@@ -58,8 +58,6 @@ module CU(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL
 	
 	reg EN_PC; //Enables PC to the Databus
 	
-	reg IL;	//Enables instuction load
-	
 	reg Cin;	//// Carry In bit	
 	
 	reg SFL; // Load Status Flags
@@ -71,6 +69,7 @@ module CU(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL
 //Wires
 
 	wire[10:0] Opcode;
+	wire [31:0] Inst;
 
 //General Assignments	
 	assign Opcode = Inst[31:21];
@@ -84,7 +83,7 @@ module CU(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL
 	assign FSL = FS;
 	
 //Datapath
-Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,EN_PC,EN_ADDR_PC,PC_MUX,PC_SEL,r0, r1, r2, r3, r4, r5, r6,r7,RCS,WRR,RR,SFL);
+Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,EN_PC,EN_ADDR_PC,PC_MUX,PC_SEL,r0, r1, r2, r3, r4, r5, r6,r7,RCS,WRR,RR,SFL,Inst);
 	
 
 	
@@ -134,15 +133,13 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 	
 	EN_ADDR_PC <= 1'b0;	
 	
-	IL <= 1'b0;	
-	
 	Cin <= 1'b0;	
 	
 	SFL <= 1'b0;
 	
 	TestPin <= 1'b0;
 
-	if(Opcode[4] == 1)
+	if(Opcode[5] == 1)
 		begin
 		
 		if(Opcode[10:8] == 3'b000)
@@ -173,6 +170,7 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 						SFL <= 1'b1;
 						PC_SEL <= 2'b00;
 						State <= State + 1;
+						TestPin <= 1'b1;
 						end
 					else if(State[0] == 1)
 						begin
@@ -344,15 +342,14 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 		if (Opcode[4:2] == 3'b101)
 			// IW format
 			begin
-			
+				DA <= Inst[4:0];
+				EN_K <= 1'b1;
+				EN_ALU <= 1'b1;
+				WR <= 1'b1;
 				if(Opcode[8] == 1)
 					//MovK
 					begin
-						DA <= Inst[4:0];
 						AA <= Inst[4:0];
-						EN_K <= 1'b1;
-						EN_ALU <= 1'b1;
-						WR <= 1'b1;
 						if(State[0] == 0)
 							begin
 								State <= State + 1;
@@ -371,8 +368,9 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 					
 				if(Opcode[8] == 0)
 					//MovZ
-					begin 
-					FS <= 5'b00000;
+					begin
+					AA <= 5'b11111;
+					FS <= 5'b01000;
 					PC_SEL <= 2'b01;
 					K <= {48'b0,Inst[20:5]};
 					end
@@ -391,6 +389,8 @@ Datapath DP(AA,BA,DA,WR,IL,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_
 						WR <= 1'b1;
 
 						EN_ALU <= 1'b1;
+						
+						PC_SEL <= 2'b01; //Incrment PC
 
 				// Status Flags
 				

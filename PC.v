@@ -1,5 +1,5 @@
 module PC(in,PS,clock,Q,reset);
-	parameter PC_RESET_VALUE = 32'h80000000;
+	parameter PC_RESET_VALUE = 32'h00000000;
 	input[29:0] in;
 	input[1:0] PS;
 	input clock;
