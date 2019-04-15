@@ -70,6 +70,7 @@ module CU(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,
 
 	wire[10:0] Opcode;
 	wire [31:0] Inst;
+	reg Comp;
 
 //General Assignments	
 	assign Opcode = Inst[31:21];
@@ -148,17 +149,72 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 				K <= Inst[25:0];
 				PC_MUX <= 1'b1;
 				PC_SEL <= 2'b10;
+				TestPin <= 1'b1;
 			end
 
-		//if(Opcode[10:8] == 3'b010)
-
+		if(Opcode[10:8] == 3'b010)
 			//B.cond
+			begin
+				case(Inst[4:0])
+					5'b00000 : Comp <= Status[0]; // EQ
+					5'b00001 : Comp <= ~Status[0]; //NE
+					5'b00010 : Comp <= Status[2]; //HS
+					5'b00011 : Comp <= ~Status[2]; //LO
+					5'b00100 : Comp <= Status[1]; //MI
+					5'b00101 : Comp <= ~Status[1]; //PL
+					5'b00110 : Comp <= Status[3]; //VS
+					5'b00111 : Comp <= ~Status[3]; //VC
+					5'b01000 : Comp <= Status[2] & ~Status[0]; //HI
+					5'b01001 : Comp <= ~Status[2] & Status[0]; //LS
+					5'b01010 : Comp <= ~(Status[1] ^ Status[3]); //GE
+					5'b01011 : Comp <= Status[1] ^ Status[3]; //LT
+					5'b01100 : Comp <= ~Status[0] | ~(Status[1] ^ Status[3]); //GT
+					5'b01101 : Comp <= Status[0] | (Status[1] ^ Status[3]); //LE
+					default : Comp <= 1'b0;
+				endcase
+				if(Comp)
+					begin
+						K <= Inst[25:0];
+						PC_MUX <= 1'b1;
+						PC_SEL <= 2'b10;
+					end
+				else
+					begin
+						PC_SEL <= 2'b01;
+					end
+			end
 
-		//if(Opcode[10:8] == 3'b100)
+		if(Opcode[10:8] == 3'b100)
 			//BL
-			//begin
-					//???
-			//end
+			begin
+				if(State[0] == 0 & State[1] == 0)
+					begin
+						PC_SEL <= 2'b00;
+						WR <= 1'b1;
+						EN_PC <= 1'b1;
+						DA <= 5'b11110;
+						State <= State + 1;
+					end
+				else if(State[0] == 1)
+					begin
+						DA <= 5'b11110;
+						AA <= 5'b11110;
+						PC_SEL <= 2'b00;
+						WR <= 1'b1;
+						EN_ALU <= 1'b1;
+						EN_K <= 1'b1;
+						K <= 64'd4;
+						FS <= 5'b01000;
+						State <= State + 1;
+					end
+				else if(State[1] == 1)
+					begin
+						PC_SEL <= 2'b10;
+						PC_MUX <= 1'b1;
+						K <= Inst[25:0];
+						State <= 3'd0;
+					end
+			end
 		if(Opcode[10:8] == 3'b101)
 			//CBZ/CBNZ
 			begin
@@ -170,11 +226,10 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 						SFL <= 1'b1;
 						PC_SEL <= 2'b00;
 						State <= State + 1;
-						TestPin <= 1'b1;
 						end
 					else if(State[0] == 1)
 						begin
-							if((Status[0] == 1 & Opcode[2] == 0) | (Status[0] == 0 & Opcode[2] == 1))
+							if((Status[0] == 1 & Opcode[3] == 0) | (Status[0] == 0 & Opcode[3] == 1))
 								begin
 									K <= Inst[20:5];
 									PC_MUX <= 1'b1;
@@ -191,7 +246,7 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 		if(Opcode[10:8] == 3'b110)
 			//BR
 			begin
-				AA <= Inst[4:0];
+				AA <= 5'b11110;
 				PC_SEL <= 2'b11;
 			end
 			
@@ -268,7 +323,6 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 					if(Opcode[9] == 0)
 						begin
 							FS <= 5'b01000; //ADD
-							TestPin <= 1'b1;
 						end
 				// Status Flags
 				
