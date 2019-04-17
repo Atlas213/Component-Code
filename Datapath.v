@@ -39,8 +39,10 @@ module Datapath(SA,SB,DA,WR,RST,CLK,FS,C0,PRESTAT,K,M,EN_ALU,EN_ADDR_ALU,EN_B,EN
 	rom_case myrom(inst,PCBUS);
 	
 	mux2to1_64bit	DataMux (MBUS, M, BBUS, K); // K connected to input of ALU at 1, B at 0
-	mux2to1_64bit	PCMux (IPCBUS, PC_SEL, ABUS[29:0], K[29:0]); //K connected to PC input at 1, A at 0 
-	
+	//mux2to1_64bit	PCMux (IPCBUS, PC_SEL, ABUS[29:0], K[29:0]); //K connected to PC input at 1, A at 0
+	Stack HS(DA,SA,CLK,RST,PCBUS,IPCBUS);
+	SpecialFunctionRegister SFR(CLK,RST,DBUS[15:0],RABUS[7:0],RWE,ROE);
+	tri_buf tbufK (K[29:0],IPCBUS,PC_SEL);
 	tri_buf tbufB (BBUS,DBUS,EN_B); // En_B will connect the B line to the data bus
 	tri_buf tbufF (FBUS,DBUS,EN_ALU); // En_ALU will connect the output of the ALU to the Databus
 	tri_buf tbufDPC(PCBUS[31:0],DBUS[31:0],EN_PC); //Connects PC output to databus

@@ -149,7 +149,6 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 				K <= Inst[25:0];
 				PC_MUX <= 1'b1;
 				PC_SEL <= 2'b10;
-				TestPin <= 1'b1;
 			end
 
 		if(Opcode[10:8] == 3'b010)
@@ -187,33 +186,46 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 		if(Opcode[10:8] == 3'b100)
 			//BL
 			begin
-				if(State[0] == 0 & State[1] == 0)
-					begin
-						PC_SEL <= 2'b00;
-						WR <= 1'b1;
-						EN_PC <= 1'b1;
-						DA <= 5'b11110;
-						State <= State + 1;
-					end
-				else if(State[0] == 1)
-					begin
-						DA <= 5'b11110;
-						AA <= 5'b11110;
-						PC_SEL <= 2'b00;
-						WR <= 1'b1;
-						EN_ALU <= 1'b1;
-						EN_K <= 1'b1;
-						K <= 64'd4;
-						FS <= 5'b01000;
-						State <= State + 1;
-					end
-				else if(State[1] == 1)
-					begin
-						PC_SEL <= 2'b10;
-						PC_MUX <= 1'b1;
-						K <= Inst[25:0];
-						State <= 3'd0;
-					end
+					if(State[0] == 0)
+						begin
+							DA <= 5'b11110;
+							State <= State + 1;
+						end
+					else
+						begin
+							PC_SEL <= 2'b10;
+							PC_MUX <= 1'b1;
+							K <= Inst[25:0];
+							State <= 3'b0;
+						end
+						
+				//if(State[0] == 0 & State[1] == 0)
+					//begin
+						//PC_SEL <= 2'b00;
+						//WR <= 1'b1;
+						//EN_PC <= 1'b1;
+						//DA <= 5'b11110;
+						//State <= State + 1;
+					//end
+				//else if(State[0] == 1)
+					//begin
+						//DA <= 5'b11110;
+						//AA <= 5'b11110;
+						//PC_SEL <= 2'b00;
+						//WR <= 1'b1;
+						//EN_ALU <= 1'b1;
+						//EN_K <= 1'b1;
+						//K <= 64'd4;
+						//FS <= 5'b01000;
+						//State <= State + 1;
+					//end
+				//else if(State[1] == 1)
+					//begin
+						//PC_SEL <= 2'b10;
+						//PC_MUX <= 1'b1;
+						//K <= Inst[25:0];
+						//State <= 3'd0;
+					//end
 			end
 		if(Opcode[10:8] == 3'b101)
 			//CBZ/CBNZ
@@ -246,8 +258,16 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 		if(Opcode[10:8] == 3'b110)
 			//BR
 			begin
-				AA <= 5'b11110;
-				PC_SEL <= 2'b11;
+				if(State[0] == 0)
+					begin
+						AA <= 5'b11110;
+						State <= State + 1;
+					end
+				else
+					begin
+						PC_SEL <= 2'b11;
+						State <= 3'd0;
+					end
 			end
 			
 	end

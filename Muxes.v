@@ -82,3 +82,9 @@ module tri_buf (a,b,enable);
 	input enable;
 	assign b = (enable) ? a : 64'bz;
 endmodule
+module sfr_tri_buf (a,b,enable);
+	input [15:0] a;
+	output[15:0] b;
+	input enable;
+	assign b = (enable) ? a : 16'bz;
+endmodule

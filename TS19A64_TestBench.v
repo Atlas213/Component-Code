@@ -1,5 +1,5 @@
 module TS19A64_TestBench();
-	reg [31:0] Inst;
+	//reg [31:0] Inst;
 	
 	reg CLK;
 	
@@ -21,24 +21,18 @@ module TS19A64_TestBench();
 	
 	wire [4:0] FSL;
 	
-	TS19A64 TS(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,FSL);
+	TS19A64 TS(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,FSL);
 	
 	initial begin
 	CLK <= 1'b1;
 	Reset <= 1'b1;
-	#100;
+	#100000;
 	Reset <= 1'b0;
-	#100
-	Inst = 32'b10010001000000000001010000000001; // ADDI X1, X0, 5
-	#500
-	Inst = 32'b11111000000000000001001111100001; // STUR X1, [X31, 1]
-	#500
-	Inst = 32'b11111000010000000001001111100010; // LDUR X2,[X31,1]
-	#500
+	#500000;
 	$stop;
 	end
 	
 	always
-		#25 CLK <= ~CLK;
+		#1000 CLK <= ~CLK;
 	
 endmodule

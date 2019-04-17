@@ -1,6 +1,6 @@
-module TS19A64(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7, TestPin,Status,K,DDL,AAL,BBL,FSL);
+module TS19A64(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7, TestPin,Status,K,DDL,AAL,BBL,FSL);
 		
-	input [31:0] Inst;
+	//input [31:0] Inst;
 	
 	input CLK;
 	
@@ -22,6 +22,6 @@ module TS19A64(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7, TestPin,Status,K,D
 	
 	output [4:0] FSL;
 	
-	CU ContU(Inst,CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,FSL);
+	CU ContU(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,FSL);
 	
 endmodule
