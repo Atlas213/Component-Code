@@ -66,6 +66,8 @@ module CU(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,
 	
 	reg[2:0] State;
 	
+	reg Shift;
+	
 //Wires
 
 	wire[10:0] Opcode;
@@ -139,6 +141,8 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 	SFL <= 1'b0;
 	
 	TestPin <= 1'b0;
+	
+	Shift <= 1'b0;
 
 	if(Opcode[5] == 1)
 		begin
@@ -369,8 +373,17 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 
 						if(Opcode[9:8] == 2'b01)
 							begin
-								FS <= 5'b00100;
+							if(Opcode[0] == 1'b0)
+								begin
+									FS <= 5'b00100;
+								end
+							else
+								begin
+									FS <= 5'b00011;
+								end
+								
 							end
+							
 					//EOR
 
 						if(Opcode[9:8] == 2'b10)
@@ -446,7 +459,14 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 					AA <= 5'b11111;
 					FS <= 5'b01000;
 					PC_SEL <= 2'b01;
-					K <= {48'b0,Inst[20:5]};
+					if(Opcode[9] == 1)
+						begin
+							K <= {48'b0,Inst[20:5]};
+						end
+					else	//MOVN
+						begin
+							K <= {48'b0,~Inst[20:5]};
+						end
 					end
 			end
 		if (Opcode[4:2] == 3'b110)
@@ -464,7 +484,21 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 
 						EN_ALU <= 1'b1;
 						
-						PC_SEL <= 2'b01; //Incrment PC
+						if(Inst[15:10] == 4'b0000)
+							begin
+								PC_SEL <= 2'b01; //Incrment PC
+							end
+						else if(State[0] == 1)
+							begin
+								Shift <= 1'b1;
+								PC_SEL <= 2'b01;
+								State <= 3'd0;
+							end
+						else
+							begin
+								State <= State + 1;
+								PC_SEL <= 2'b00;
+							end
 
 				// Status Flags
 				
@@ -475,24 +509,24 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 						if(Opcode[1] == 0)
 							//Function Select
 							begin
-							if(Opcode[9] == 1)
+							if(Opcode[9] == 1 & Shift == 1'b0)
 								//Sub
 								begin
 									FS <= 5'b01001;
 									Cin <= 1'b1;
 								end
-							if(Opcode[9] == 0)
+							if(Opcode[9] == 0 & Shift== 1'b0)
 								//Add
 								begin
 									FS <= 5'b01000;
 								end
 							end
-						if(Opcode[1] == 1)
+						if(Opcode[1] == 1 | Shift == 1'b1)
 						//Shift Wire Assignments
 							begin
 							K[5:0] <= Inst[15:10];
 							EN_K <= 1'b1;
-							if(Opcode[0] == 1)
+							if(Opcode[0] == 1 )
 								//Shift Left
 								begin
 									FS <= 5'b10000;
