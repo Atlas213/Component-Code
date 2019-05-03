@@ -43,7 +43,7 @@ module ram_sp_sr_sw (
   // Write Operation : When we = 1, cs = 1
   always @ (posedge clk)
   begin : MEM_WRITE
-     if ( cs & we & address[7:4] < 4'b1111 ) begin
+     if ( cs & we & !(address[7:4] == 4'b1111) ) begin
          mem[address] = data;
      end
   end
@@ -52,7 +52,7 @@ module ram_sp_sr_sw (
   // Read Operation : When we = 0, oe = 1, cs = 1
   always @ (posedge clk)
   begin : MEM_READ
-    if (cs &  ~we & oe & address[7:4] < 4'b1111 ) begin
+    if (cs &  ~we & oe & !(address[7:4] == 4'b1111) ) begin
       data_out = mem[address];
       oe_r = 1;
     end else begin

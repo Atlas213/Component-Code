@@ -1,30 +1,27 @@
-module SpecialFunctionRegister(CLK,RST,Data,Addr,MW,MR,out);
+module SpecialFunctionRegister(CLK,RST,Data,Addr,MW,MR);
 input CLK; //Clock
 input RST; // Reset
 inout [15:0] Data; //Data input
 input [7:0] Addr; // Address input
 input MW; //Memory write
 input MR; // Memory read
-output out;
+
 wire Load;
 wire EN_BUF;
 wire Enable;
-wire [3:0] SFR_ADDR;
+wire [4:0] SFR_ADDR;
 wire [15:0]load_enable;
 wire [15:0] read_enable;
 wire [15:0]R00, R01, R02, R03, R04, R05, R06, R07, R08;
 wire [15:0]R09, R10, R11, R12, R13, R14, R15, R16;
 
-wire PWMOUT;
-
 assign Load = Enable & MW;
 assign EN_BUF = Enable & MR;
-assign SFR_ADDR = Addr[3:0];
 
 AddressDetect AD(Addr,Enable,SFR_ADDR);
 
-Decoder5to32 decodewrite(load_enable, {1'b0,SFR_ADDR[3:0]}, Load);
-Decoder5to32 decoderead(read_enable, {1'b0,SFR_ADDR[3:0]}, EN_BUF);
+Decoder5to32 decodewrite(load_enable, SFR_ADDR, Load);
+Decoder5to32 decoderead(read_enable, SFR_ADDR, EN_BUF);
 
 sfr_tri_buf RB0(R00,Data,read_enable[0]);
 sfr_tri_buf RB1(R01,Data,read_enable[1]);
@@ -75,7 +72,5 @@ defparam reg12.N = 16;
 defparam reg13.N = 16;
 defparam reg14.N = 16;
 defparam reg15.N = 16;
-
-PulseWidthModulator PWM(out,R00,R01,RST,CLK);
 
 endmodule

@@ -1,4 +1,4 @@
-module CU(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,FSL);
+module CU(CLK,Reset,out,r0, r1, r2, r3, r4, r5, r6, r7);
 
 
 //IO
@@ -10,19 +10,21 @@ module CU(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,
 	
 	output [15:0] r0, r1, r2, r3, r4, r5, r6, r7;
 	
-	output reg TestPin;
+	//reg TestPin;
 	
-	output [3:0] Status; //Status Flags
+	wire [3:0] Status; //Status Flags
 	
-	output [63:0] K; // K
+	//output [63:0] K; // K
 	
-	output [4:0] DDL;
+	///output [4:0] DDL;
 
-	output [4:0] AAL;
+	//output [4:0] AAL;
 	
-	output [4:0] BBL;
+	//output [4:0] BBL;
 	
-	output [4:0] FSL;
+	//output [4:0] FSL;
+	
+	output out;
 	
 //Internal Registers
 	
@@ -68,6 +70,8 @@ module CU(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,
 	
 	reg Shift;
 	
+	reg BR_SEL;
+	
 //Wires
 
 	wire[10:0] Opcode;
@@ -77,16 +81,16 @@ module CU(CLK,Reset,r0, r1, r2, r3, r4, r5, r6, r7,TestPin,Status,K,DDL,AAL,BBL,
 //General Assignments	
 	assign Opcode = Inst[31:21];
 	
-	assign AAL = AA;
+	//assign AAL = AA;
 	
-	assign BBL = BA;
+	//assign BBL = BA;
 	
-	assign DDL = DA;
+	//assign DDL = DA;
 	
-	assign FSL = FS;
+	//assign FSL = FS;
 	
 //Datapath
-Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,EN_PC,EN_ADDR_PC,PC_MUX,PC_SEL,r0, r1, r2, r3, r4, r5, r6,r7,RCS,WRR,RR,SFL,Inst);
+Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,EN_PC,EN_ADDR_PC,PC_MUX,PC_SEL,RCS,WRR,RR,SFL,BR_SEL,Inst,out,r0, r1, r2, r3, r4, r5, r6, r7);
 	
 
 	
@@ -140,7 +144,9 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 	
 	SFL <= 1'b0;
 	
-	TestPin <= 1'b0;
+	BR_SEL <= 1'b0;
+	
+	//TestPin <= 1'b0;
 	
 	Shift <= 1'b0;
 
@@ -152,6 +158,7 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 			begin
 				K <= Inst[25:0];
 				PC_MUX <= 1'b1;
+				BR_SEL <= 1'b1;
 				PC_SEL <= 2'b10;
 			end
 
@@ -179,6 +186,7 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 					begin
 						K <= Inst[25:0];
 						PC_MUX <= 1'b1;
+						BR_SEL <= 1'b1;
 						PC_SEL <= 2'b10;
 					end
 				else
@@ -199,6 +207,7 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 						begin
 							PC_SEL <= 2'b10;
 							PC_MUX <= 1'b1;
+							BR_SEL <= 1'b1;
 							K <= Inst[25:0];
 							State <= 3'b0;
 						end
@@ -249,6 +258,7 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 								begin
 									K <= Inst[20:5];
 									PC_MUX <= 1'b1;
+									BR_SEL <= 1'b1;
 									PC_SEL <= 2'b10;
 								end
 							else
@@ -262,16 +272,26 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 		if(Opcode[10:8] == 3'b110)
 			//BR
 			begin
-				if(State[0] == 0)
-					begin
-						AA <= 5'b11110;
-						State <= State + 1;
-					end
+				if(Inst[9:5] == 5'b11110)
+				begin
+				
+					if(State[0] == 0)
+						begin
+							AA <= 5'b11110;
+							State <= State + 1;
+						end
+					else
+						begin
+							PC_SEL <= 2'b11;
+							State <= 3'd0;
+						end
+				end
 				else
-					begin
-						PC_SEL <= 2'b11;
-						State <= 3'd0;
-					end
+				begin
+				AA <= Inst[4:0];
+				PC_SEL <= 2'b11;
+				PC_MUX <= 1'b1;
+				end
 			end
 			
 	end
@@ -484,20 +504,19 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 
 						EN_ALU <= 1'b1;
 						
-						if(Inst[15:10] == 4'b0000)
+						if((Inst[15:10] == 6'b000000) | (Opcode[1] == 1'b1))
 							begin
 								PC_SEL <= 2'b01; //Incrment PC
 							end
-						else if(State[0] == 1)
-							begin
-								Shift <= 1'b1;
-								PC_SEL <= 2'b01;
-								State <= 3'd0;
-							end
-						else
+						else if(State[0] == 0)
 							begin
 								State <= State + 1;
 								PC_SEL <= 2'b00;
+							end
+						else
+							begin
+								AA <= DA;
+								PC_SEL <= 2'b01;
 							end
 
 				// Status Flags
@@ -506,26 +525,28 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 
 				// Arithmetic/Shift
 
-						if(Opcode[1] == 0)
+						if(Opcode[1] == 0 & State[0] == 0)
 							//Function Select
 							begin
-							if(Opcode[9] == 1 & Shift == 1'b0)
+							if(Opcode[9] == 1)
 								//Sub
 								begin
 									FS <= 5'b01001;
 									Cin <= 1'b1;
 								end
-							if(Opcode[9] == 0 & Shift== 1'b0)
+							if(Opcode[9] == 0)
 								//Add
 								begin
 									FS <= 5'b01000;
 								end
-							end
-						if(Opcode[1] == 1 | Shift == 1'b1)
+						end
+						
+						if(Opcode[1] == 1 | State[0] == 1)
 						//Shift Wire Assignments
-							begin
+						begin
 							K[5:0] <= Inst[15:10];
 							EN_K <= 1'b1;
+							State <= 3'b0;
 							if(Opcode[0] == 1 )
 								//Shift Left
 								begin
@@ -535,8 +556,7 @@ Datapath DP(AA,BA,DA,WR,Reset,CLK,FS,Cin,Status,K,EN_K,EN_ALU,EN_ADDR_ALU,EN_B,E
 							if(Opcode[0] == 0)
 								//Shift Right
 								begin
-									FS <= 5'b10100;
-									
+									FS <= 5'b10100;	
 								end
 						end
 				end

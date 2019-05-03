@@ -1,11 +1,11 @@
 module AddressDetect(AddrI,Enable,AddrO);
 input [7:0] AddrI;
 output Enable;
-output [3:0] AddrO;
+output [4:0] AddrO;
 
 reg out;
 assign Enable = out;
-assign AddrO[3:0] = AddrI[3:0];
+assign AddrO[4:0] = AddrI[4:0];
 
 always @(AddrI) begin
 
